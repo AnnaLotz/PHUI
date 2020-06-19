@@ -19,7 +19,7 @@ public class ObjectController : MonoBehaviour
     public bool showCylinder;
 
 
-    public bool parentIsRotate = true;
+    public bool parentIsRotate = false;
 
     //range von 0 bis 90 als speed festlegen
     [Range(0f, 90f)]
@@ -44,10 +44,10 @@ public class ObjectController : MonoBehaviour
 
         //Übergabewerte Objekt und Drehgeschwindigkeit
         //f weil float Wert braucht das halt
-        Rotate(cube, 10f);
-        Rotate(capsule, 20f);
-        Rotate(sphere, 30f);
-        Rotate(cylinder, 50f);
+        //Rotate(cube, 10f);
+        //Rotate(capsule, 20f);
+        //Rotate(sphere, 30f);
+        //Rotate(cylinder, 50f);
 
         if (parentIsRotate)
             Rotate(transform.gameObject, speed);
