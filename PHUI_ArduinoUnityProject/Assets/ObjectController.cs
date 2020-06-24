@@ -8,6 +8,9 @@ using UnityEngine;
 
 public class ObjectController : MonoBehaviour
 {
+    //variable die den Zustand steuert
+    public bool dreaming = false;
+
     //Objekte Global anlegen, in unity von Hand in den verweis ziehen
     public GameObject cube;
     public GameObject capsule;
@@ -16,16 +19,17 @@ public class ObjectController : MonoBehaviour
     public GameObject rect;
     public GameObject longCylinder;
 
-    //Liste, in der alle Totems rein kommen
+    //Liste, in der alle Totems rein kommen (ähnlich Array oder Interface in typescript). Enthält Instanzen der Klasse Totem (siehe weiter unten)
     public List<Totem> totemsList = new List<Totem>();
 
+    //Zahl, welche Seite gerade nach vorne zeigt
     public int activeSide; //von 1-6
 
 
     // Start is called before the first frame update
     void Start()
     {
-        //alle gameObjects in die liste schieben
+        //Objekte nach der Klasse Totem erstellen und in die Totemliste schieben
         totemsList.Add(new Totem(cube, false, 0, 1));
         totemsList.Add(new Totem(capsule, false, 0, 2));
         totemsList.Add(new Totem(sphere, false, 0, 3));
@@ -46,6 +50,13 @@ public class ObjectController : MonoBehaviour
         FindActiveSide();
         ToggleObjects();
     }
+
+    //wird im RecieveIMUValues Script aufgerufen, hier werden die Gyro-Daten bearbeitet
+    public void handleIMUData(float _x, float _y,float _z, float _w, float _speedFactor) 
+    {
+        if (!dreaming)
+            this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor);
+    }
    
 
     public void FindActiveSide() {
@@ -63,7 +74,7 @@ public class ObjectController : MonoBehaviour
         {           
             if (angles[i] < 45 && angles[i] > -45)
             {
-                activeSide = i + 1;                
+                activeSide = i + 1;     
             }
         }
         Debug.Log(activeSide + " is ActiveSide");
@@ -74,10 +85,12 @@ public class ObjectController : MonoBehaviour
         //Gameobjekt ein/ausschalten:
         foreach (Totem gameobj in totemsList)
         {
+            //erstmal alle ausschalten
             gameobj.isActiveBool = false;
+            //das Objekt, welches mit der Zahl von activeSide übereinstimmt, aktivieren/anzeigen
             if (gameobj.cubeSide == activeSide)
                 gameobj.isActiveBool = true;
-            gameobj.ToggleVisibility();
+            gameobj.ToggleVisibility(); //Aufruf einer Methode in der Klasse
         }
     }
 
@@ -86,10 +99,10 @@ public class ObjectController : MonoBehaviour
     //**********************************************************************************************
     public class Totem 
     {
-        public GameObject gameObject;
-        public bool isActiveBool;
-        public float visibilityPercentage;
-        public int cubeSide;
+        public GameObject gameObject; //welches gameObject liegt in der Klasse, also welches Totem
+        public bool isActiveBool; //Objekt an oder aus
+        public float visibilityPercentage; //Prozent, wie stark das Objekt nach oben zeigt
+        public int cubeSide; //zu welcher Seitenzahl gehört das Objekt
 
         //constructor in Unity:
         public Totem(GameObject _gameObject, bool _isActiveBool, float _visibilityPercentage, int _cubeSide)

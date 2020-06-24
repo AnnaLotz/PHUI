@@ -259,7 +259,7 @@ Camera:
   m_GameObject: {fileID: 237980548}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
+  m_ClearFlags: 2
   m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
@@ -886,6 +886,16 @@ PrefabInstance:
       propertyPath: activeExtentionsMap.values.Array.data[0]
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 114023058375386772, guid: bb5e6aea88a650f4a8317e74940b0ea4,
+        type: 3}
+      propertyPath: OnDataReceivedEvent.m_PersistentCalls.m_Calls.Array.data[1].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114023058375386772, guid: bb5e6aea88a650f4a8317e74940b0ea4,
+        type: 3}
+      propertyPath: OnDataReceivedEvent.m_PersistentCalls.m_Calls.Array.data[1].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 3948355414141522559, guid: bb5e6aea88a650f4a8317e74940b0ea4,
         type: 3}
       propertyPath: presentExtentionsMap.keys.Array.size
@@ -993,6 +1003,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26147ce599637194aa64c4144d5844be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dreaming: 0
   cube: {fileID: 390207873}
   capsule: {fileID: 1884779303}
   sphere: {fileID: 1678824738}

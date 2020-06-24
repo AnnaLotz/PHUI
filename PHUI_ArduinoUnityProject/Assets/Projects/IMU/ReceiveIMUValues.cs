@@ -25,7 +25,9 @@ public class ReceiveIMUValues : MonoBehaviour {
             float x = float.Parse(values[2]);
             float y = float.Parse(values[3]);
             float z = float.Parse(values[4]);
-            this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation,  new Quaternion(x, y, z, w), Time.deltaTime * speedFactor);
+            //Aufruf Funktion im ObjectController Script:
+            GetComponent<ObjectController>().handleIMUData(x, y, z, w, speedFactor);
+
         } else if (values.Length != 5)
         {
             Debug.LogWarning(data);
