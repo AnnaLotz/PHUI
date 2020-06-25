@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using UnityEngine.VFX;
 using UnityEngine;
 
 public class ObjectController : MonoBehaviour
@@ -18,12 +19,19 @@ public class ObjectController : MonoBehaviour
     public GameObject cylinder;
     public GameObject rect;
     public GameObject longCylinder;
-
+    
+    //Liste einfach nur mit den GameObjects. Per Hand im Inspector verbunden
+    public List<GameObject> totemObjects;
     //Liste, in der alle Totems rein kommen (ähnlich Array oder Interface in typescript). Enthält Instanzen der Klasse Totem (siehe weiter unten)
     public List<Totem> totemsList = new List<Totem>();
 
     //Zahl, welche Seite gerade nach vorne zeigt
     public int activeSide; //von 1-6
+    //hiermit kann man steuern, wie schnell das Morphing beginnt
+    public float angleSteps = 90f;
+
+    //für den VisualEffectGraph
+    public List<VisualEffect> myEffect;
 
 
     // Start is called before the first frame update
@@ -37,25 +45,27 @@ public class ObjectController : MonoBehaviour
         totemsList.Add(new Totem(rect, false, 0, 5));
         totemsList.Add(new Totem(longCylinder, false, 0, 6));
 
+        /*
         //durch die liste aller Totems iterieren
         foreach (Totem gameobj in totemsList) 
         {
             Debug.Log(gameobj);
         }
+        */
     }
 
     // Update is called once per frame
     void Update()
     {
         FindActiveSide();
-        ToggleObjects();
+        if (dreaming)
+            ToggleObjects();
     }
 
     //wird im RecieveIMUValues Script aufgerufen, hier werden die Gyro-Daten bearbeitet
     public void handleIMUData(float _x, float _y,float _z, float _w, float _speedFactor) 
-    {
-        if (!dreaming)
-            this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor);
+    {        
+        this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor); //objekt-rotation
     }
    
 
@@ -71,38 +81,58 @@ public class ObjectController : MonoBehaviour
         
         //wenn der winkel zwischen -45 und 45 liegt, ist das die front-facing-side
         for (int i = 0; i < angles.Length; i++)
-        {           
-            if (angles[i] < 45 && angles[i] > -45)
+        {
+
+            if (angles[i] < angleSteps && angles[i] > -angleSteps)
             {
-                activeSide = i + 1;     
+                activeSide = i + 1; //nur die Variable beschreiben
+                totemsList[i].visibilityPercentage = 1 - (Math.Abs(angles[i]) / angleSteps); //sichtbarkeits-Wert berechnen
             }
+            else 
+            {
+                totemsList[i].visibilityPercentage = 0; //wenn eh nicht sichtbar, zu 0% sichtbar sein
+            }
+
         }
         Debug.Log(activeSide + " is ActiveSide");
     }
 
+    
     void ToggleObjects()
     {
-        //Gameobjekt ein/ausschalten:
-        foreach (Totem gameobj in totemsList)
+        int index = 0; //eigener index für die forEach-Schleife
+
+        //durch alle objekte in der totemListe durch iterieren
+        foreach (Totem gameobj in totemsList) 
         {
+            /* durch das skalieren nicht mehr nötig
             //erstmal alle ausschalten
             gameobj.isActiveBool = false;
             //das Objekt, welches mit der Zahl von activeSide übereinstimmt, aktivieren/anzeigen
             if (gameobj.cubeSide == activeSide)
                 gameobj.isActiveBool = true;
-            gameobj.ToggleVisibility(); //Aufruf einer Methode in der Klasse
+            ToggleVisibility();
+            */
+
+            Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, gameobj.visibilityPercentage); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
+            totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
+            myEffect[index].SetFloat("ParticleScale", scale.x / 2); //für den VisualEffectGraph: dort als Variable nutzbar
+
+            index++;
         }
     }
 
 
 
     //**********************************************************************************************
+    
     public class Totem 
     {
         public GameObject gameObject; //welches gameObject liegt in der Klasse, also welches Totem
         public bool isActiveBool; //Objekt an oder aus
         public float visibilityPercentage; //Prozent, wie stark das Objekt nach oben zeigt
         public int cubeSide; //zu welcher Seitenzahl gehört das Objekt
+        public Vector3 initialScale; //ursprüngliche Skalierung speichern, wird im constructor gesetzt
 
         //constructor in Unity:
         public Totem(GameObject _gameObject, bool _isActiveBool, float _visibilityPercentage, int _cubeSide)
@@ -111,12 +141,16 @@ public class ObjectController : MonoBehaviour
             isActiveBool = _isActiveBool;
             visibilityPercentage = _visibilityPercentage;
             cubeSide = _cubeSide;
+            initialScale = gameObject.transform.localScale;
         }
 
-        public void ToggleVisibility() 
+        /* nicht gebraucht wegen skalierungs-weg
+        public void ToggleVisibility()
         {
             gameObject.SetActive(isActiveBool);
         }
+        */
+
     }
     
 
