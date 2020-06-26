@@ -13,12 +13,12 @@ public class ObjectController : MonoBehaviour
     public bool dreaming = false;
 
     //Objekte Global anlegen, in unity von Hand in den verweis ziehen
-    public GameObject cube;
-    public GameObject capsule;
-    public GameObject sphere;
-    public GameObject cylinder;
-    public GameObject rect;
-    public GameObject longCylinder;
+    public GameObject dice;
+    public GameObject chip;
+    public GameObject marble;
+    public GameObject bishop;
+    public GameObject pin;
+    public GameObject spinningTop;
     
     //Liste einfach nur mit den GameObjects. Per Hand im Inspector verbunden
     public List<GameObject> totemObjects;
@@ -38,12 +38,12 @@ public class ObjectController : MonoBehaviour
     void Start()
     {
         //Objekte nach der Klasse Totem erstellen und in die Totemliste schieben
-        totemsList.Add(new Totem(cube, false, 0, 1));
-        totemsList.Add(new Totem(capsule, false, 0, 2));
-        totemsList.Add(new Totem(sphere, false, 0, 3));
-        totemsList.Add(new Totem(cylinder, false, 0, 4));
-        totemsList.Add(new Totem(rect, false, 0, 5));
-        totemsList.Add(new Totem(longCylinder, false, 0, 6));
+        totemsList.Add(new Totem(dice, false, 0, 1));
+        totemsList.Add(new Totem(chip, false, 0, 2));
+        totemsList.Add(new Totem(marble, false, 0, 3));
+        totemsList.Add(new Totem(bishop, false, 0, 4));
+        totemsList.Add(new Totem(pin, false, 0, 5));
+        totemsList.Add(new Totem(spinningTop, false, 0, 6));
 
         /*
         //durch die liste aller Totems iterieren
