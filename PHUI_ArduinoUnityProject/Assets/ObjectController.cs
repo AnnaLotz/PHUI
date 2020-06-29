@@ -116,7 +116,7 @@ public class ObjectController : MonoBehaviour
 
             Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, gameobj.visibilityPercentage); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
             totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
-            myEffect[index].SetFloat("ParticleScale", scale.x / 2); //für den VisualEffectGraph: dort als Variable nutzbar
+            //myEffect[index].SetFloat("ParticleScale", scale.x / 2); //für den VisualEffectGraph: dort als Variable nutzbar
 
             index++;
         }
