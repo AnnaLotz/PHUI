@@ -4,13 +4,16 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using UnityEngine.UI;
 using UnityEngine.VFX;
 using UnityEngine;
+using Uduino;
+using UnityEditorInternal;
 
 public class ObjectController : MonoBehaviour
 {
     //variable die den Zustand steuert
-    public bool dreaming = false;
+    public bool dreaming = true;
 
     //Objekte Global anlegen, in unity von Hand in den verweis ziehen
     public GameObject dice;
@@ -33,10 +36,16 @@ public class ObjectController : MonoBehaviour
     //für den VisualEffectGraph
     public List<VisualEffect> myEffect;
 
+    void Awake()
+    {
+        UduinoManager.Instance.OnDataReceived += OnDataReceived; //Create the Delegate
+        UduinoManager.Instance.alwaysRead = true; // This value should be On By Default
+    }
 
     // Start is called before the first frame update
     void Start()
     {
+
         //Objekte nach der Klasse Totem erstellen und in die Totemliste schieben
         totemsList.Add(new Totem(dice, false, 0, 1));
         totemsList.Add(new Totem(chip, false, 0, 2));
@@ -45,6 +54,7 @@ public class ObjectController : MonoBehaviour
         totemsList.Add(new Totem(pin, false, 0, 5));
         totemsList.Add(new Totem(spinningTop, false, 0, 6));
 
+        FindActiveSide();
         /*
         //durch die liste aller Totems iterieren
         foreach (Totem gameobj in totemsList) 
@@ -57,15 +67,42 @@ public class ObjectController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        FindActiveSide();
+        
+
         if (dreaming)
-            ToggleObjects();
+        {
+            FindActiveSide();
+            ToggleObjectsMorphing();
+        }
+        else 
+        {
+            ToggleObjectsRotatingOnly();
+        }
+
+
+    }
+    void OnDataReceived(string data, UduinoDevice deviceName)
+    {
+        if (data == "1")
+        {
+            if (dreaming == false) //wechsel zu traum
+            {
+                dreaming = true;
+            }
+            else //wechsel zu realität
+            {
+                dreaming = false;
+            }
+        }
     }
 
     //wird im RecieveIMUValues Script aufgerufen, hier werden die Gyro-Daten bearbeitet
     public void handleIMUData(float _x, float _y,float _z, float _w, float _speedFactor) 
-    {        
-        this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor); //objekt-rotation
+    {
+        if (dreaming)
+            this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor); //objekt-rotation
+        else
+            GetComponentInChildren<Transform>().localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor);
     }
    
 
@@ -82,10 +119,13 @@ public class ObjectController : MonoBehaviour
         //wenn der winkel zwischen -45 und 45 liegt, ist das die front-facing-side
         for (int i = 0; i < angles.Length; i++)
         {
-
-            if (angles[i] < angleSteps && angles[i] > -angleSteps)
+            if (angles[i] < 45 && angles[i] > -45)
             {
                 activeSide = i + 1; //nur die Variable beschreiben
+            }
+            
+            if (angles[i] < angleSteps && angles[i] > -angleSteps)
+            {
                 totemsList[i].visibilityPercentage = 1 - (Math.Abs(angles[i]) / angleSteps); //sichtbarkeits-Wert berechnen
             }
             else 
@@ -94,25 +134,16 @@ public class ObjectController : MonoBehaviour
             }
 
         }
-        Debug.Log(activeSide + " is ActiveSide");
     }
 
     
-    void ToggleObjects()
+    void ToggleObjectsMorphing()
     {
         int index = 0; //eigener index für die forEach-Schleife
 
         //durch alle objekte in der totemListe durch iterieren
         foreach (Totem gameobj in totemsList) 
         {
-            /* durch das skalieren nicht mehr nötig
-            //erstmal alle ausschalten
-            gameobj.isActiveBool = false;
-            //das Objekt, welches mit der Zahl von activeSide übereinstimmt, aktivieren/anzeigen
-            if (gameobj.cubeSide == activeSide)
-                gameobj.isActiveBool = true;
-            ToggleVisibility();
-            */
 
             Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, gameobj.visibilityPercentage); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
             totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
@@ -122,6 +153,35 @@ public class ObjectController : MonoBehaviour
         }
     }
 
+    void ToggleObjectsRotatingOnly()
+    {
+        int index = 0; //eigener index für die forEach-Schleife
+        Debug.Log(activeSide);
+        foreach (Totem gameobj in totemsList)
+        {
+
+            if (index == (activeSide - 1))
+            {                
+                Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, gameobj.visibilityPercentage); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
+                totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
+            }
+            else 
+            {
+                Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, 0); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
+                totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
+            }
+
+            /*
+            //erstmal alle ausschalten
+            gameobj.isActiveBool = false;
+            //das Objekt, welches mit der Zahl von activeSide übereinstimmt, aktivieren/anzeigen
+            if (gameobj.cubeSide == activeSide)
+                gameobj.isActiveBool = true;
+            gameobj.ToggleVisibility();
+            */
+            index++;
+        }
+    }
 
 
     //**********************************************************************************************
@@ -144,7 +204,7 @@ public class ObjectController : MonoBehaviour
             initialScale = gameObject.transform.localScale;
         }
 
-        /* nicht gebraucht wegen skalierungs-weg
+        /*
         public void ToggleVisibility()
         {
             gameObject.SetActive(isActiveBool);

@@ -3,13 +3,13 @@ Cmd: initializeCompiler
 Cmd: preprocessCompute
   insize=5607 outsize=5609 ok=1
 Cmd: preprocessCompute
-  insize=9470 outsize=9472 ok=1
+  insize=9405 outsize=9407 ok=1
 Cmd: preprocess
   insize=12210 outsize=610 ok=1
 Cmd: preprocessCompute
-  insize=7401 outsize=7403 ok=1
+  insize=7403 outsize=7405 ok=1
 Cmd: preprocessCompute
-  insize=7354 outsize=7356 ok=1
+  insize=7340 outsize=7342 ok=1
 Cmd: preprocess
   insize=16650 outsize=598 ok=1
 Cmd: preprocessCompute
@@ -22,6 +22,18 @@ Cmd: preprocessCompute
   insize=7403 outsize=7405 ok=1
 Cmd: preprocessCompute
   insize=7340 outsize=7342 ok=1
+Cmd: preprocess
+  insize=16650 outsize=598 ok=1
+Cmd: preprocessCompute
+  insize=5607 outsize=5609 ok=1
+Cmd: preprocessCompute
+  insize=9470 outsize=9472 ok=1
+Cmd: preprocess
+  insize=12210 outsize=610 ok=1
+Cmd: preprocessCompute
+  insize=7401 outsize=7403 ok=1
+Cmd: preprocessCompute
+  insize=7354 outsize=7356 ok=1
 Cmd: preprocess
   insize=16650 outsize=598 ok=1
 Cmd: preprocessCompute

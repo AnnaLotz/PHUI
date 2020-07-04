@@ -1,9 +1,15 @@
 #include "Uduino.h"  // Include Uduino library at the top of the sketch
-Uduino uduino("IMU");
+Uduino uduino("IMU", "uduinoButton");
+//Uduino uduino("uduinoButton");
 
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "Wire.h"
+
+// for button:
+const int buttonPin = 8;
+int buttonState = 0;
+int prevButtonState = 0;
 
 
 MPU6050 mpu;
@@ -49,6 +55,9 @@ void setup() {
     // Error
     Serial.println("Error!");
   }
+
+  //Button:
+  pinMode(buttonPin, INPUT_PULLUP);
 }
 
 
@@ -79,6 +88,16 @@ void loop() {
       //SendYawPitchRoll();
       //SendRealAccel();
       //SendWorldAccel();
+    }
+  }
+
+  //button:
+   if (uduino.isConnected()) {
+    buttonState = digitalRead(buttonPin);
+
+    if (buttonState != prevButtonState) {
+      Serial.println(buttonState);
+      prevButtonState = buttonState;
     }
   }
 }
