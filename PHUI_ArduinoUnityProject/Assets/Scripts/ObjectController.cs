@@ -1,4 +1,9 @@
-﻿using System;
+﻿using UnityEngine;
+using Uduino;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -6,9 +11,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.UI;
 using UnityEngine.VFX;
-using UnityEngine;
-using Uduino;
-using UnityEditorInternal;
+using JetBrains.Annotations;
 
 public class ObjectController : MonoBehaviour
 {
@@ -36,6 +39,11 @@ public class ObjectController : MonoBehaviour
     //für den VisualEffectGraph
     public List<VisualEffect> myEffect;
 
+    //Referenzvektor für FindActiveSide(), der beim Zustandswechel veränderbar ist. Die Winkel werden global gespeichert
+    public Vector3 referenceVector = Vector3.right;
+    public float[] angles;
+    
+
     void Awake()
     {
         UduinoManager.Instance.OnDataReceived += OnDataReceived; //Create the Delegate
@@ -45,7 +53,7 @@ public class ObjectController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
+        angles = new float[6];
         //Objekte nach der Klasse Totem erstellen und in die Totemliste schieben
         totemsList.Add(new Totem(dice, false, 0, 1));
         totemsList.Add(new Totem(chip, false, 0, 2));
@@ -62,6 +70,7 @@ public class ObjectController : MonoBehaviour
             Debug.Log(gameobj);
         }
         */
+        dreaming = false; //damit man im Realitätsmodus startet
     }
 
     // Update is called once per frame
@@ -84,52 +93,88 @@ public class ObjectController : MonoBehaviour
     {
         if (data == "1")
         {
+            //kleinsten Winkel im anglesArray finden, die entsprechende Seite wird im switch als Bezugsvektor gesetzt
+            for (int i = 0; i < angles.Length; i++) 
+            {
+                if (angles[i] == Mathf.Min(angles))
+                {
+                    switch (i)
+                    {
+                        case 0:
+                            referenceVector = transform.up;
+                            break;
+                        case 1:
+                            referenceVector = transform.right;
+                            break;
+                        case 2:
+                            referenceVector = transform.forward;
+                            break;
+                        case 3:
+                            referenceVector = - transform.up;
+                            break;
+                        case 4:
+                            referenceVector = - transform.right;
+                            break;
+                        case 5:
+                            referenceVector = - transform.forward;
+                            break;
+                        default:
+                            referenceVector = transform.up;
+                            Debug.Log("Hier ist default case");
+                            break;
+                    }
+                }
+            }
+
             if (dreaming == false) //wechsel zu traum
             {
+                FindActiveSide();
                 dreaming = true;
+                
             }
             else //wechsel zu realität
-            {
+            {              
                 dreaming = false;
-            }
+            }            
         }
     }
 
     //wird im RecieveIMUValues Script aufgerufen, hier werden die Gyro-Daten bearbeitet
     public void handleIMUData(float _x, float _y,float _z, float _w, float _speedFactor) 
     {
-        if (dreaming)
-            this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor); //objekt-rotation
-        else
-            GetComponentInChildren<Transform>().localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor);
+        this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor); //objekt-rotation
+
     }
    
 
     public void FindActiveSide() {
-        //Berechne winkel zwischen lokalem Vektor und globalen up-Vektor
-        float angle1 = Vector3.Angle(transform.up, Vector3.right);
-        float angle2 = Vector3.Angle(transform.right, Vector3.right);
-        float angle3 = Vector3.Angle(transform.forward, Vector3.right);
-        float angle4 = Vector3.Angle(- transform.up, Vector3.right);
-        float angle5 = Vector3.Angle(- transform.right, Vector3.right);
-        float angle6 = Vector3.Angle(- transform.forward, Vector3.right);
-        float[] angles = { angle1, angle2, angle3, angle4, angle5, angle6 };
-        
+        //Berechne winkel zwischen lokalem Vektor und Referenzvektor
+        angles[0] = Vector3.Angle(transform.up, referenceVector);
+        angles[1] = Vector3.Angle(transform.right, referenceVector);
+        angles[2] = Vector3.Angle(transform.forward, referenceVector);
+        angles[3] = Vector3.Angle(- transform.up, referenceVector);
+        angles[4] = Vector3.Angle(- transform.right, referenceVector);
+        angles[5] = Vector3.Angle(- transform.forward, referenceVector);
+
+            
         //wenn der winkel zwischen -45 und 45 liegt, ist das die front-facing-side
         for (int i = 0; i < angles.Length; i++)
         {
             if (angles[i] < 45 && angles[i] > -45)
             {
-                activeSide = i + 1; //nur die Variable beschreiben
+                activeSide = i; //nur die Variable beschreiben
             }
-            
-            if (angles[i] < angleSteps && angles[i] > -angleSteps)
+
+            if (dreaming)
             {
-                totemsList[i].visibilityPercentage = 1 - (Math.Abs(angles[i]) / angleSteps); //sichtbarkeits-Wert berechnen
-            }
-            else 
-            {
-                totemsList[i].visibilityPercentage = 0; //wenn eh nicht sichtbar, zu 0% sichtbar sein
+                if (angles[i] < angleSteps && angles[i] > -angleSteps)
+                {
+                    totemsList[i].visibilityPercentage = 1 - (Math.Abs(angles[i]) / angleSteps); //sichtbarkeits-Wert berechnen
+                }
+                else
+                {
+                    totemsList[i].visibilityPercentage = 0; //wenn eh nicht sichtbar, zu 0% sichtbar sein
+                }
             }
 
         }
@@ -143,10 +188,9 @@ public class ObjectController : MonoBehaviour
         //durch alle objekte in der totemListe durch iterieren
         foreach (Totem gameobj in totemsList) 
         {
-
             Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, gameobj.visibilityPercentage); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
             totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
-            myEffect[index].SetFloat("DreamingColorValue", 0); //für den VisualEffectGraph: dort als Variable nutzbar 
+            myEffect[index].SetFloat("DreamingColorValue", 0); //für den VisualEffectGraph: dort als Variable nutzbar            
 
             index++;
         }
@@ -159,7 +203,7 @@ public class ObjectController : MonoBehaviour
         foreach (Totem gameobj in totemsList)
         {
 
-            if (index == (activeSide - 1))
+            if (index == (activeSide))
             {                
                 Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, gameobj.visibilityPercentage); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
                 totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen

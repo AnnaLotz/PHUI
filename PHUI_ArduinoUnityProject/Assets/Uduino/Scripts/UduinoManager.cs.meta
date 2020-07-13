@@ -5,9 +5,8 @@ labels:
 - Serial
 - Uduino
 - Unity
-timeCreated: 1496413080
-licenseType: Store
 MonoImporter:
+  externalObjects: {}
   serializedVersion: 2
   defaultReferences: []
   executionOrder: 0

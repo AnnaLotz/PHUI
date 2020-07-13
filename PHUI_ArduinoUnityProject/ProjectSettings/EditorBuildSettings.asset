@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Projects/IMU/IMU.unity
+    guid: 6a38fa760a8800d479b2c78ae4259f74
   m_configObjects: {}

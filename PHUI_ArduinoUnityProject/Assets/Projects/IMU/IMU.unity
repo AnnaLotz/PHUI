@@ -2602,6 +2602,8 @@ MonoBehaviour:
   - {fileID: 1744622806}
   - {fileID: 284032962}
   - {fileID: 1493018484}
+  referenceVector: {x: 1, y: 0, z: 0}
+  angles: []
 --- !u!1 &2058055381
 GameObject:
   m_ObjectHideFlags: 0
