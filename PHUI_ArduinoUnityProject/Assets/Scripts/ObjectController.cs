@@ -33,16 +33,15 @@ public class ObjectController : MonoBehaviour
 
     //Zahl, welche Seite gerade nach vorne zeigt
     public int activeSide; //von 1-6
-    //hiermit kann man steuern, wie schnell das Morphing beginnt
-    public float angleSteps = 90f;
+    
+    //Referenzvektor für FindActiveSide(), der beim Zustandswechel veränderbar ist. Die Winkel werden global gespeichert
+    public Vector3 referenceVector = Vector3.right;
+    public float[] angles;
 
     //für den VisualEffectGraph
     public List<VisualEffect> myEffect;
 
-    //Referenzvektor für FindActiveSide(), der beim Zustandswechel veränderbar ist. Die Winkel werden global gespeichert
-    public Vector3 referenceVector = Vector3.right;
-    public float[] angles;
-    
+
 
     void Awake()
     {
@@ -55,28 +54,20 @@ public class ObjectController : MonoBehaviour
     {
         angles = new float[6];
         //Objekte nach der Klasse Totem erstellen und in die Totemliste schieben
-        totemsList.Add(new Totem(dice, false, 0, 1));
-        totemsList.Add(new Totem(chip, false, 0, 2));
-        totemsList.Add(new Totem(marble, false, 0, 3));
-        totemsList.Add(new Totem(bishop, false, 0, 4));
-        totemsList.Add(new Totem(pin, false, 0, 5));
-        totemsList.Add(new Totem(spinningTop, false, 0, 6));
+        totemsList.Add(new Totem(dice, false, 0));
+        totemsList.Add(new Totem(chip, false, 0));
+        totemsList.Add(new Totem(marble, false, 0));
+        totemsList.Add(new Totem(bishop, false, 0));
+        totemsList.Add(new Totem(pin, false, 0));
+        totemsList.Add(new Totem(spinningTop, false, 0));
 
-        FindActiveSide();
-        /*
-        //durch die liste aller Totems iterieren
-        foreach (Totem gameobj in totemsList) 
-        {
-            Debug.Log(gameobj);
-        }
-        */
+        FindActiveSide();      
         dreaming = false; //damit man im Realitätsmodus startet
     }
 
     // Update is called once per frame
     void Update()
-    {
-        
+    {        
         if (dreaming)
         {
             FindActiveSide();
@@ -86,14 +77,13 @@ public class ObjectController : MonoBehaviour
         {
             ToggleObjectsRotatingOnly();
         }
-
-
     }
+
     void OnDataReceived(string data, UduinoDevice deviceName)
     {
-        if (data == "1")
+        if (data == "1") // wenn Knopf runter gedrückt wird
         {
-            //kleinsten Winkel im anglesArray finden, die entsprechende Seite wird im switch als Bezugsvektor gesetzt
+            //kleinsten Winkel im angles Array finden, die entsprechende Seite wird im switch als Bezugsvektor gesetzt
             for (int i = 0; i < angles.Length; i++) 
             {
                 if (angles[i] == Mathf.Min(angles))
@@ -126,11 +116,11 @@ public class ObjectController : MonoBehaviour
                 }
             }
 
+            //Zustand wechseln:
             if (dreaming == false) //wechsel zu traum
             {
                 FindActiveSide();
                 dreaming = true;
-                
             }
             else //wechsel zu realität
             {              
@@ -139,16 +129,15 @@ public class ObjectController : MonoBehaviour
         }
     }
 
-    //wird im RecieveIMUValues Script aufgerufen, hier werden die Gyro-Daten bearbeitet
+    //wird im RecieveIMUValues Script aufgerufen, hier werden die Gyro-Daten verarbeitet
     public void handleIMUData(float _x, float _y,float _z, float _w, float _speedFactor) 
     {
-        this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor); //objekt-rotation
-
+        this.transform.localRotation = Quaternion.Lerp(this.transform.localRotation, new Quaternion(_x, _y, _z, _w), Time.deltaTime * _speedFactor); //Objekt-rotation
     }
    
 
     public void FindActiveSide() {
-        //Berechne winkel zwischen lokalem Vektor und Referenzvektor
+        //Berechne winkel zwischen entsprechenden lokalem Vektor und Referenzvektor
         angles[0] = Vector3.Angle(transform.up, referenceVector);
         angles[1] = Vector3.Angle(transform.right, referenceVector);
         angles[2] = Vector3.Angle(transform.forward, referenceVector);
@@ -156,7 +145,6 @@ public class ObjectController : MonoBehaviour
         angles[4] = Vector3.Angle(- transform.right, referenceVector);
         angles[5] = Vector3.Angle(- transform.forward, referenceVector);
 
-            
         //wenn der winkel zwischen -45 und 45 liegt, ist das die front-facing-side
         for (int i = 0; i < angles.Length; i++)
         {
@@ -167,16 +155,15 @@ public class ObjectController : MonoBehaviour
 
             if (dreaming)
             {
-                if (angles[i] < angleSteps && angles[i] > -angleSteps)
+                if (angles[i] < 90 && angles[i] > -90)
                 {
-                    totemsList[i].visibilityPercentage = 1 - (Math.Abs(angles[i]) / angleSteps); //sichtbarkeits-Wert berechnen
+                    totemsList[i].visibilityPercentage = 1 - (Math.Abs(angles[i]) / 90); //sichtbarkeits-Wert berechnen
                 }
                 else
                 {
-                    totemsList[i].visibilityPercentage = 0; //wenn eh nicht sichtbar, zu 0% sichtbar sein
+                    totemsList[i].visibilityPercentage = 0; //wenn seite nach hinten zeigt: Objekt zu 0% sichtbar machen
                 }
             }
-
         }
     }
 
@@ -184,13 +171,12 @@ public class ObjectController : MonoBehaviour
     void ToggleObjectsMorphing()
     {
         int index = 0; //eigener index für die forEach-Schleife
-
         //durch alle objekte in der totemListe durch iterieren
         foreach (Totem gameobj in totemsList) 
         {
             Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, gameobj.visibilityPercentage); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
             totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
-            myEffect[index].SetFloat("DreamingColorValue", 0); //für den VisualEffectGraph: dort als Variable nutzbar            
+            myEffect[index].SetFloat("DreamingColorValue", 0); //für den VisualEffectGraph: dort als Variable nutzbar. Farbe auf den ersten Wert setzen
 
             index++;
         }
@@ -199,31 +185,21 @@ public class ObjectController : MonoBehaviour
     void ToggleObjectsRotatingOnly()
     {
         int index = 0; //eigener index für die forEach-Schleife
-        //Debug.Log(activeSide);
+        //durch alle objekte in der totemListe durch iterieren
         foreach (Totem gameobj in totemsList)
         {
-
             if (index == (activeSide))
             {                
                 Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, gameobj.visibilityPercentage); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
                 totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
-                myEffect[index].SetFloat("DreamingColorValue", 1); //für den VisualEffectGraph: dort als Variable nutzbar 
+                myEffect[index].SetFloat("DreamingColorValue", 1); //für den VisualEffectGraph: dort als Variable nutzbar. Farbe auf den zweiten Wert setzen
             }
             else 
             {
                 Vector3 scale = Vector3.Lerp(Vector3.zero, gameobj.initialScale, 0); //skalierungsvektor erstellen, beachtet die ursprüungliche Skalierung
                 totemObjects[index].transform.localScale = scale; //skalierung des aktuellen Totems auf den neu berechneten Scale bringen
-            }
-                       
+            } 
 
-            /*
-            //erstmal alle ausschalten
-            gameobj.isActiveBool = false;
-            //das Objekt, welches mit der Zahl von activeSide übereinstimmt, aktivieren/anzeigen
-            if (gameobj.cubeSide == activeSide)
-                gameobj.isActiveBool = true;
-            gameobj.ToggleVisibility();
-            */
             index++;
         }
     }
@@ -236,28 +212,17 @@ public class ObjectController : MonoBehaviour
         public GameObject gameObject; //welches gameObject liegt in der Klasse, also welches Totem
         public bool isActiveBool; //Objekt an oder aus
         public float visibilityPercentage; //Prozent, wie stark das Objekt nach oben zeigt
-        public int cubeSide; //zu welcher Seitenzahl gehört das Objekt
         public Vector3 initialScale; //ursprüngliche Skalierung speichern, wird im constructor gesetzt
 
         //constructor in Unity:
-        public Totem(GameObject _gameObject, bool _isActiveBool, float _visibilityPercentage, int _cubeSide)
+        public Totem(GameObject _gameObject, bool _isActiveBool, float _visibilityPercentage)
         {
             gameObject = _gameObject;
             isActiveBool = _isActiveBool;
-            visibilityPercentage = _visibilityPercentage;
-            cubeSide = _cubeSide;
+            visibilityPercentage = _visibilityPercentage;    
             initialScale = gameObject.transform.localScale;
         }
-
-        /*
-        public void ToggleVisibility()
-        {
-            gameObject.SetActive(isActiveBool);
-        }
-        */
-
     }
     
-
 
 }
